@@ -1,0 +1,165 @@
+package cm.iusjc.signalchat.client.service;
+
+import cm.iusjc.signalchat.client.model.EncryptedMessage;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.stereotype.Service;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
+import org.springframework.web.socket.sockjs.client.RestTemplateXhrTransport;
+import org.springframework.web.socket.sockjs.client.SockJsClient;
+import org.springframework.web.socket.sockjs.client.Transport;
+import org.springframework.web.socket.sockjs.client.WebSocketTransport;
+
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+/**
+ * Service de connexion WebSocket STOMP vers le serveur central.
+ *
+ * Responsabilites :
+ * - Etablir et maintenir la connexion WebSocket STOMP
+ * - S'abonner au topic personnel /topic/messages/{username}
+ * - Transmettre les messages recus au MessageService via callback
+ * - Gerer la reconnexion automatique en cas de perte de connexion
+ */
+@Slf4j
+@Service
+public class ServerConnectionService {
+
+    @Value("${signalchat.server-url}")
+    private String serverUrl;
+
+    @Value("${signalchat.username}")
+    private String username;
+
+    /** Session STOMP active */
+    private StompSession stompSession;
+
+    /** Callback vers MessageService pour les messages recus */
+    private Consumer<EncryptedMessage> messageHandler;
+
+    /** Planificateur pour la reconnexion automatique */
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    private int reconnectAttempts = 0;
+    private static final int MAX_RECONNECT_ATTEMPTS = 5;
+
+    /**
+     * Enregistre le handler de messages entrants (appele par MessageService).
+     */
+    public void setMessageHandler(Consumer<EncryptedMessage> handler) {
+        this.messageHandler = handler;
+    }
+
+    /**
+     * Etablit la connexion WebSocket STOMP vers le serveur.
+     * Utilise SockJS avec WebSocket natif + XHR comme transport de repli.
+     * Appele par KeyRegistrationService apres enregistrement des cles.
+     */
+    public void connect() {
+        List<Transport> transports = List.of(
+                new WebSocketTransport(new StandardWebSocketClient()),
+                new RestTemplateXhrTransport()
+        );
+        SockJsClient sockJsClient = new SockJsClient(transports);
+        WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+
+        String wsUrl = serverUrl + "/ws";
+        log.info("Connexion WebSocket STOMP vers {} ...", wsUrl);
+
+        try {
+            stompSession = stompClient.connectAsync(wsUrl, new StompSessionHandlerAdapter() {
+
+                @Override
+                public void afterConnected(StompSession session, StompHeaders headers) {
+                    reconnectAttempts = 0;
+                    log.info("Connecte au serveur WebSocket : {}", wsUrl);
+                    subscribeToMessages(session);
+                }
+
+                @Override
+                public void handleTransportError(StompSession session, Throwable exception) {
+                    log.error("Erreur transport WebSocket : {}", exception.getMessage());
+                    scheduleReconnect();
+                }
+
+            }).get(10, TimeUnit.SECONDS);
+
+        } catch (Exception e) {
+            log.error("Echec de connexion WebSocket : {}", e.getMessage());
+            scheduleReconnect();
+        }
+    }
+
+    /**
+     * S'abonne au topic personnel du client pour recevoir les messages chiffres.
+     */
+    private void subscribeToMessages(StompSession session) {
+        session.subscribe("/topic/messages/" + username, new StompFrameHandler() {
+
+            @Override
+            public Type getPayloadType(StompHeaders headers) {
+                return EncryptedMessage.class;
+            }
+
+            @Override
+            public void handleFrame(StompHeaders headers, Object payload) {
+                EncryptedMessage msg = (EncryptedMessage) payload;
+                int ciphertextSize = msg.getCiphertext() != null ? msg.getCiphertext().length() : 0;
+                log.info("Message chiffre recu de {} | ciphertext: {} bytes (Base64) | msgNum: {}",
+                        msg.getSender(), ciphertextSize, msg.getMessageNumber());
+                if (messageHandler != null) {
+                    messageHandler.accept(msg);
+                }
+            }
+        });
+        log.info("Abonne a /topic/messages/{}", username);
+    }
+
+    /**
+     * Envoie un message chiffre vers le serveur via STOMP.
+     *
+     * @param message EncryptedMessage pret a etre envoye
+     * @throws IllegalStateException si la connexion STOMP nest pas etablie
+     */
+    public void send(EncryptedMessage message) {
+        if (stompSession == null || !stompSession.isConnected()) {
+            throw new IllegalStateException("Non connecte au serveur WebSocket");
+        }
+        stompSession.send("/app/send", message);
+        log.debug("Message chiffre envoye vers {} | msgNum={}",message.getRecipient(), message.getMessageNumber());
+    }
+
+    /**
+     * Indique si la connexion STOMP est active.
+     */
+    public boolean isConnected() {
+        return stompSession != null && stompSession.isConnected();
+    }
+
+    /**
+     * Planifie une tentative de reconnexion avec backoff exponentiel.
+     * Delais : 3s, 6s, 12s, 24s, 48s (max 5 tentatives).
+     */
+    private void scheduleReconnect() {
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            log.error("Nombre maximum de tentatives de reconnexion atteint ({})", MAX_RECONNECT_ATTEMPTS);
+            return;
+        }
+        long delaySeconds = (long) Math.pow(2, reconnectAttempts) * 3L;
+        reconnectAttempts++;
+        log.info("Reconnexion dans {} secondes (tentative {}/{})", delaySeconds, reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
+        scheduler.schedule(this::connect, delaySeconds, TimeUnit.SECONDS);
+    }
+}
