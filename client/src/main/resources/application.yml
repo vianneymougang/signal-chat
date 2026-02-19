@@ -1,0 +1,11 @@
+server:
+  port: ${CLIENT_PORT:8081}
+
+signalchat:
+  username: ${USERNAME:Alice}
+  server-url: ${SERVER_URL:http://localhost:9000}
+  one-time-prekeys-count: 20
+
+logging:
+  level:
+    cm.iusjc.signalchat: DEBUG
