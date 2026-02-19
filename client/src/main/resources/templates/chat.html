@@ -1,0 +1,93 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title th:text="'SignalChat — ' + ${username}">SignalChat</title>
+        <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    </head>
+    <body>
+        <div class="app-container">
+            <!--
+            ================================================================
+            COLONNE GAUCHE — CHAT (60%)
+            ================================================================ -->
+            <div class="chat-panel">
+                <!-- En-tête -->
+                <div class="chat-header">
+                    <h1>
+                        🔒 SignalChat — <span th:text="${username}">Alice</span>
+                    </h1>
+                    <span id="connection-indicator" class="indicator offline"
+                        >○ Déconnecté</span
+                    >
+                </div>
+
+                <!-- Barre des utilisateurs en ligne -->
+                <div class="users-bar">
+                    <span class="users-label">En ligne :</span>
+                    <div id="users-list" class="users-list">
+                        <span class="no-users">Chargement...</span>
+                    </div>
+                </div>
+
+                <!-- Zone de messages -->
+                <div id="messages-container" class="messages-container">
+                    <div
+                        class="conversation-placeholder"
+                        id="conversation-placeholder"
+                    >
+                        <span class="placeholder-icon">💬</span>
+                        <p>Sélectionnez un utilisateur pour commencer</p>
+                    </div>
+                </div>
+
+                <!-- Input de message -->
+                <div class="message-input-bar">
+                    <input
+                        type="text"
+                        id="message-input"
+                        placeholder="Sélectionnez un destinataire..."
+                        autocomplete="off"
+                        disabled
+                    />
+                    <button id="send-button" disabled>Envoyer</button>
+                </div>
+            </div>
+
+            <!-- ================================================================
+         COLONNE DROITE — MONITORING CRYPTO (40%)
+         ================================================================ -->
+            <div class="monitoring-panel">
+                <div class="monitoring-header">
+                    <h2>📊 Monitoring Crypto</h2>
+                    <div class="monitoring-actions">
+                        <button id="clear-logs-btn">Effacer</button>
+                        <button id="export-logs-btn">Exporter</button>
+                    </div>
+                </div>
+
+                <div id="crypto-log" class="crypto-log">
+                    <!-- Événements injectés par monitoring.js -->
+                </div>
+            </div>
+        </div>
+
+        <\!-- Username courant injecté par Thymeleaf pour le JS -->
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const CURRENT_USER = /*[[${username}]]*/ "Alice";
+            /*]]>*/
+        </script>
+
+        <!-- SockJS + STOMP via Webjars -->
+        <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+        <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+
+        <!-- Application JS — ordre important : websocket → chat → monitoring
+        -->
+        <script th:src="@{/js/websocket.js}"></script>
+        <script th:src="@{/js/chat.js}"></script>
+        <script th:src="@{/js/monitoring.js}"></script>
+    </body>
+</html>

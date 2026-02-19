@@ -1,0 +1,546 @@
+/* ==========================================================================
+   SignalChat — styles.css
+   Design inspiré WhatsApp + panneau terminal de monitoring crypto
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Reset & base
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Layout principal — deux colonnes
+   -------------------------------------------------------------------------- */
+.app-container {
+    display: flex;
+    height: 100vh;
+    gap: 0;
+}
+
+/* Colonne gauche : Chat (60%) */
+.chat-panel {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    background: #e5ddd5;
+    border-right: 1px solid #d1d7db;
+}
+
+/* Colonne droite : Monitoring Crypto (40%) */
+.monitoring-panel {
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    color: #d4d4d4;
+}
+
+/* --------------------------------------------------------------------------
+   En-tête chat
+   -------------------------------------------------------------------------- */
+.chat-header {
+    background: #075e54;
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.chat-header h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+/* Indicateur connexion */
+.indicator {
+    font-size: 0.85rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.indicator.online {
+    background: rgba(37, 211, 102, 0.2);
+    color: #25d366;
+    border: 1px solid #25d366;
+}
+
+.indicator.offline {
+    background: rgba(255, 80, 80, 0.15);
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+}
+
+/* --------------------------------------------------------------------------
+   Barre des utilisateurs
+   -------------------------------------------------------------------------- */
+.users-bar {
+    background: #f0f2f5;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    border-bottom: 1px solid #d1d7db;
+    min-height: 50px;
+}
+
+.users-label {
+    font-size: 0.8rem;
+    color: #667781;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.users-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.user-badge {
+    background: #fff;
+    border: 2px solid #25d366;
+    color: #075e54;
+    padding: 4px 14px;
+    border-radius: 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.user-badge:hover {
+    background: #25d366;
+    color: #fff;
+}
+
+.user-badge.active {
+    background: #075e54;
+    color: #fff;
+    border-color: #075e54;
+}
+
+/* Badge de notification sur le bouton user */
+.user-badge .notif-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #ef4444;
+    color: #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.no-users {
+    font-size: 0.8rem;
+    color: #aaa;
+    font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   Zone de messages
+   -------------------------------------------------------------------------- */
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scroll-behavior: smooth;
+}
+
+/* Fond "papier peint" style WhatsApp */
+.messages-container::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 35px,
+            rgba(0,0,0,0.02) 35px,
+            rgba(0,0,0,0.02) 70px
+        );
+    pointer-events: none;
+    z-index: 0;
+}
+
+.messages-container > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Placeholder "Sélectionnez une conversation" */
+.conversation-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #aaa;
+    gap: 12px;
+}
+
+.conversation-placeholder .placeholder-icon {
+    font-size: 3rem;
+    opacity: 0.4;
+}
+
+.conversation-placeholder p {
+    font-size: 0.95rem;
+}
+
+/* --------------------------------------------------------------------------
+   Bulles de messages
+   -------------------------------------------------------------------------- */
+.message-bubble {
+    max-width: 70%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    animation: slideIn 0.25s ease-out;
+    word-break: break-word;
+}
+
+.message-bubble.sent {
+    background: #dcf8c6;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+}
+
+.message-bubble.received {
+    background: #fff;
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+
+.bubble-content {
+    font-size: 0.92rem;
+    color: #111b21;
+    line-height: 1.4;
+}
+
+.bubble-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.bubble-time {
+    font-size: 0.68rem;
+    color: #667781;
+}
+
+.bubble-lock {
+    font-size: 0.65rem;
+    cursor: default;
+    title: "Message chiffré E2EE";
+}
+
+/* --------------------------------------------------------------------------
+   Input de message
+   -------------------------------------------------------------------------- */
+.message-input-bar {
+    background: #f0f2f5;
+    padding: 10px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+    border-top: 1px solid #d1d7db;
+}
+
+#message-input {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 24px;
+    background: #fff;
+    font-size: 0.92rem;
+    outline: none;
+    color: #111b21;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    transition: box-shadow 0.2s;
+}
+
+#message-input:focus {
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+#message-input:disabled {
+    background: #f0f2f5;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+#send-button {
+    padding: 10px 22px;
+    background: #25d366;
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+}
+
+#send-button:hover:not(:disabled) {
+    background: #1da851;
+}
+
+#send-button:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+#send-button:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   Panneau Monitoring Crypto
+   -------------------------------------------------------------------------- */
+.monitoring-header {
+    background: #252526;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    border-bottom: 1px solid #3c3c3c;
+}
+
+.monitoring-header h2 {
+    font-size: 0.95rem;
+    color: #cccccc;
+    font-weight: 600;
+}
+
+.monitoring-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.monitoring-actions button {
+    padding: 4px 12px;
+    background: transparent;
+    color: #8a8a8a;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.monitoring-actions button:hover {
+    background: #2d2d2d;
+    color: #cccccc;
+    border-color: #6e6e6e;
+}
+
+/* Zone de log */
+.crypto-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    font-family: 'Consolas', 'Courier New', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   Événements crypto individuels
+   -------------------------------------------------------------------------- */
+.crypto-event {
+    padding: 8px 10px;
+    border-radius: 4px;
+    background: #252526;
+    border-left: 3px solid transparent;
+    animation: fadeIn 0.2s ease-in;
+}
+
+.event-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.event-time {
+    color: #6a9955;
+    font-size: 0.72rem;
+}
+
+.event-type {
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.event-details {
+    padding-left: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.event-line {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+}
+
+.event-label {
+    color: #608b4e;
+    min-width: 50px;
+    flex-shrink: 0;
+    font-size: 0.72rem;
+}
+
+.event-value {
+    color: #9cdcfe;
+    word-break: break-all;
+}
+
+/* Valeurs hex avec tooltip */
+.hex-value {
+    cursor: help;
+    border-bottom: 1px dotted #4e4e4e;
+}
+
+.event-description {
+    color: #808080;
+    font-size: 0.7rem;
+    font-style: italic;
+    margin-top: 2px;
+}
+
+/* Couleurs par type d'événement */
+.event-KEY_GEN          { border-left-color: #569cd6; }
+.event-KEY_GEN .event-type { color: #569cd6; }
+
+.event-X3DH             { border-left-color: #c586c0; }
+.event-X3DH .event-type { color: #c586c0; }
+
+.event-RATCHET          { border-left-color: #ce9178; }
+.event-RATCHET .event-type { color: #ce9178; }
+
+.event-HKDF             { border-left-color: #ce9178; }
+.event-HKDF .event-type { color: #ce9178; }
+
+.event-ENCRYPT          { border-left-color: #6a9955; }
+.event-ENCRYPT .event-type { color: #6a9955; }
+
+.event-DECRYPT          { border-left-color: #4ec9b0; }
+.event-DECRYPT .event-type { color: #4ec9b0; }
+
+.event-HMAC             { border-left-color: #808080; }
+.event-HMAC .event-type { color: #808080; }
+
+.event-SIGNATURE        { border-left-color: #dcdcaa; }
+.event-SIGNATURE .event-type { color: #dcdcaa; }
+
+/* --------------------------------------------------------------------------
+   Animations
+   -------------------------------------------------------------------------- */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
+   Scrollbars personnalisées
+   -------------------------------------------------------------------------- */
+.messages-container::-webkit-scrollbar,
+.crypto-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track { background: transparent; }
+.messages-container::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+.crypto-log::-webkit-scrollbar-track { background: #1e1e1e; }
+.crypto-log::-webkit-scrollbar-thumb {
+    background: #3c3c3c;
+    border-radius: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive — petit écran (< 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    body {
+        overflow: auto;
+    }
+
+    .app-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    .chat-panel {
+        width: 100%;
+        height: 60vh;
+    }
+
+    .monitoring-panel {
+        width: 100%;
+        height: 40vh;
+    }
+
+    .chat-header h1 {
+        font-size: 0.95rem;
+    }
+
+    .message-bubble {
+        max-width: 85%;
+    }
+}
