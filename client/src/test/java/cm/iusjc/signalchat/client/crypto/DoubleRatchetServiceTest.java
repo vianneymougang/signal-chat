@@ -178,21 +178,28 @@ class DoubleRatchetServiceTest {
     @Test
     @DisplayName("Les ratchet keys changent a chaque direction de conversation")
     void encrypt_ratchetKeyChangesOnDirectionSwitch() {
+        // Alice envoie a Bob
         byte[] msg1 = "Premier".getBytes(StandardCharsets.UTF_8);
         EncryptedMessage enc1 = doubleRatchet.ratchetEncrypt(aliceSession, msg1, "Alice", "Bob");
 
+        // Bob doit d'abord dechiffrer le message d'Alice pour initialiser
+        // son sendingChainKey via dhRatchetStep
+        doubleRatchet.ratchetDecrypt(bobSession, enc1);
+
+        // On capture la cle ratchet d'Alice avant le ratchet step
         byte[] aliceKeyBefore = aliceSession.getLocalRatchetPublicKey().clone();
 
+        // Bob repond (il a maintenant une sendingChainKey apres avoir recu d'Alice)
         byte[] msg2 = "Reponse".getBytes(StandardCharsets.UTF_8);
         EncryptedMessage enc2 = doubleRatchet.ratchetEncrypt(bobSession, msg2, "Bob", "Alice");
+
+        // Alice dechiffre → declenche son DH ratchet step (nouvelle localRatchetKey)
         doubleRatchet.ratchetDecrypt(aliceSession, enc2);
 
         byte[] aliceKeyAfter = aliceSession.getLocalRatchetPublicKey();
 
         assertFalse(Arrays.equals(aliceKeyBefore, aliceKeyAfter),
                 "Alice doit generer une nouvelle cle de ratchet apres le DH ratchet step");
-
-        doubleRatchet.ratchetDecrypt(bobSession, enc1);
     }
 
     // =========================================================================
