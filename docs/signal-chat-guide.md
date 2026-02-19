@@ -565,9 +565,11 @@ La crypto et le réseau fonctionnent. Maintenant, l'interface.
 ## Ce que je veux
 
 ### chat.html (Thymeleaf)
+
 Une page responsive avec deux colonnes :
 
 #### Colonne gauche — Chat (60% largeur)
+
 - En-tête : "🔒 SignalChat — {username}" + indicateur de connexion (●/○)
 - Liste des utilisateurs en ligne (récupérée via GET /api/keys/users proxied par le client)
 - Zone de messages avec bulles style WhatsApp :
@@ -577,17 +579,17 @@ Une page responsive avec deux colonnes :
 - Input de message + bouton Envoyer
 
 #### Colonne droite — Monitoring Crypto (40% largeur)
+
 - Panneau scrollable avec fond sombre (style terminal)
 - Affichage en temps réel des CryptoEvents reçus via WebSocket local
 - Chaque événement est stylé selon son type :
   - 🔑 KEY_GEN → bleu
-  - 🤝 X3DH_* → violet
-  - 🔄 RATCHET_* → orange
+  - 🤝 X3DH\_\* → violet
+  - 🔄 RATCHET\_\* → orange
   - 🔐 ENCRYPT → vert
   - 🔓 DECRYPT → cyan
   - ✅ HMAC_VERIFY → gris
 - Format d'un événement :
-```
 
 [14:32:05.123] 🔐 ENCRYPT
 Message Key: 0x7a3f...c2b1
@@ -596,26 +598,29 @@ IV: 0x3c4d...8e9f
 Ciphertext: 0x9f8e...7d6c
 HMAC: 0x5a6b...3e2d ✅
 
-```
 - Bouton "Effacer les logs"
 - Bouton "Exporter les logs" (télécharge un fichier .txt)
 
 ### WebSocket local (Client backend → UI)
+
 - ChatWebSocketController qui publie sur /topic/crypto-events les CryptoEvents
 - Le JS se connecte via SockJS/STOMP au backend local et affiche les événements
 
 ### chat.js + monitoring.js + websocket.js
+
 - chat.js : gestion des messages (envoi via STOMP, affichage des bulles)
 - monitoring.js : réception et formatage des CryptoEvents dans le panneau
 - websocket.js : connexion SockJS/STOMP unique avec routing vers chat et monitoring
 
 ### styles.css
+
 - Design moderne et professionnel, inspiré WhatsApp (fond gris clair, bulles vertes)
 - Panneau monitoring avec fond #1e1e1e, police monospace, texte vert/bleu/orange
 - Responsive : sur petit écran, le monitoring passe en dessous
 - Animations subtiles : nouveau message (slide-in), nouvel événement crypto (fade-in)
 
 ## Contraintes
+
 - PAS de framework JS (React, Vue...) — vanilla JS + STOMP uniquement
 - L'UI doit fonctionner sur Chrome, Firefox, Edge
 - Le panneau monitoring doit auto-scroller vers le bas à chaque nouvel événement
@@ -632,18 +637,20 @@ L'application fonctionne. Finalisons pour le TP.
 ## Ce que je veux
 
 ### 1. Scripts de lancement
+
 Crée dans le dossier scripts/ :
 
 - start-server.sh :
-  ```bash
+
+```bash
   #!/bin/bash
   echo "🚀 Démarrage du serveur SignalChat sur le port 9000..."
   java -jar server/target/server-*.jar
-````
+```
 
 - start-client.sh :
 
-  ```bash
+```
   #!/bin/bash
   # Usage: ./start-client.sh Alice 8081 192.168.1.10
   USERNAME=${1:-Alice}
@@ -654,7 +661,7 @@ Crée dans le dossier scripts/ :
     --signalchat.username=$USERNAME \
     --server.port=$PORT \
     --signalchat.server-url=http://$SERVER:9000
-  ```
+```
 
 - Équivalents .bat pour Windows
 
@@ -706,7 +713,7 @@ Dans l'UI, affiche en permanence :
 - Nombre de clés uniques générées
 - "Chaque message utilise une clé unique qui est immédiatement détruite"
 
-```
+````
 
 ---
 
@@ -717,6 +724,7 @@ Dans l'UI, affiche en permanence :
 1. **Lance chaque prompt séparément**, dans l'ordre (1 → 2 → 3 → 4)
 2. **Vérifie que les tests passent** après le prompt 1 avant de passer au prompt 2
 3. Si Claude Code fait une erreur crypto, corrige-le avec un message ciblé :
+
 ```
 
 Le X3DH ne produit pas le même secret des deux côtés.
@@ -727,7 +735,7 @@ Vérifie l'ordre des paramètres dans les 4 ECDH :
   Les deux doivent donner le même résultat (propriété commutative de ECDH).
   Lance X3DHServiceTest pour vérifier.
 
-````
+```
 
 ### Commandes utiles Claude Code
 
@@ -740,7 +748,7 @@ claude "Le X3DHServiceTest échoue. Analyse le stacktrace et corrige."
 
 # Vérifier le build complet
 claude "Build le projet complet : mvn clean package. Corrige les erreurs de compilation."
-````
+```
 
 ### Fichier .claude/settings.json recommandé
 
@@ -750,4 +758,16 @@ claude "Build le projet complet : mvn clean package. Corrige les erreurs de comp
     "allow": ["Bash(mvn *)", "Bash(java *)", "Bash(cat *)", "Bash(ls *)"]
   }
 }
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
 ```
