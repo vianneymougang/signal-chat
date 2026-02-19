@@ -106,8 +106,9 @@ public class KeyRegistrationService {
             restTemplate.postForEntity(serverUrl + "/api/keys/register", bundle, String.class);
             log.info("Cles enregistrees aupres du serveur pour l'utilisateur : {}", username);
         } catch (Exception e) {
-            log.error("Echec de l'enregistrement des cles : {}", e.getMessage());
-            throw new RuntimeException("Impossible de s'enregistrer aupres du serveur", e);
+            log.error("Echec de l'enregistrement des cles aupres du serveur : {}", e.getMessage());
+            log.warn("Le client demarre sans enregistrement — les messages ne peuvent pas etre envoyes");
+            return;
         }
 
         // --- 6. Connexion WebSocket apres enregistrement des cles ---
