@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChatMessage {
     private String sender;
+    private String recipient;
     private String content;
     private long timestamp;
 }
