@@ -27,7 +27,7 @@ public class MessageRelayHandler {
      */
     @MessageMapping("/send")
     public void relayMessage(EncryptedMessage message) {
-        int ciphertextSize = message.getCiphertext() \!= null ? message.getCiphertext().length() : 0;
+        int ciphertextSize = message.getCiphertext() != null ? message.getCiphertext().length() : 0;
         log.info("RELAI [{}] -> [{}] | ciphertext: {} bytes (Base64) | messageNumber: {}",
                 message.getSender(), message.getRecipient(),
                 ciphertextSize, message.getMessageNumber());

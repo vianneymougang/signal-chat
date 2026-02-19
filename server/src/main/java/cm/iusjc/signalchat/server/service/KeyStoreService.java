@@ -4,7 +4,6 @@ import cm.iusjc.signalchat.server.model.KeyBundle;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +29,7 @@ public class KeyStoreService {
         log.debug("  -> identityKey      : {}...", truncate(keyBundle.getIdentityKey()));
         log.debug("  -> signedPreKey     : {}...", truncate(keyBundle.getSignedPreKey()));
         log.debug("  -> oneTimePreKeys   : {} cle(s)",
-                  keyBundle.getOneTimePreKeys() \!= null ? keyBundle.getOneTimePreKeys().size() : 0);
+                  keyBundle.getOneTimePreKeys() != null ? keyBundle.getOneTimePreKeys().size() : 0);
     }
 
     /**
@@ -44,8 +43,8 @@ public class KeyStoreService {
             return Optional.empty();
         }
         // Consommer une One-Time Pre-Key si disponible
-        if (bundle.getOneTimePreKeys() \!= null && \!bundle.getOneTimePreKeys().isEmpty()) {
-            String opk = bundle.getOneTimePreKeys().remove(0);
+        if (bundle.getOneTimePreKeys() != null && !bundle.getOneTimePreKeys().isEmpty()) {
+            bundle.getOneTimePreKeys().remove(0);
             log.debug("One-Time Pre-Key consommee pour {} — {} restante(s)",
                       username, bundle.getOneTimePreKeys().size());
         } else {

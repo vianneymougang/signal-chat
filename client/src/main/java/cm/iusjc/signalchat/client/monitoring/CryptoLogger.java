@@ -28,8 +28,8 @@ public class CryptoLogger {
      * @param description description lisible de l operation
      */
     public void logEvent(CryptoEventType type, byte[] input, byte[] output, String description) {
-        String inputHex  = input  \!= null ? truncateHex(input)  : "—";
-        String outputHex = output \!= null ? truncateHex(output) : "—";
+        String inputHex  = input  != null ? truncateHex(input)  : "—";
+        String outputHex = output != null ? truncateHex(output) : "—";
 
         CryptoEvent event = CryptoEvent.builder()
                 .timestamp(System.currentTimeMillis())
