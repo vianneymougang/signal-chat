@@ -2,7 +2,9 @@ package cm.iusjc.signalchat.client.service;
 
 import cm.iusjc.signalchat.client.model.EncryptedMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
@@ -48,6 +50,10 @@ public class ServerConnectionService {
     /** Callback vers MessageService pour les messages recus */
     private Consumer<EncryptedMessage> messageHandler;
 
+    /** Push des changements de statut vers le frontend (optionnel au démarrage) */
+    @Autowired(required = false)
+    private SimpMessagingTemplate messagingTemplate;
+
     /** Planificateur pour la reconnexion automatique */
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -86,11 +92,13 @@ public class ServerConnectionService {
                     reconnectAttempts = 0;
                     log.info("Connecte au serveur WebSocket : {}", wsUrl);
                     subscribeToMessages(session);
+                    broadcastStatus(true);
                 }
 
                 @Override
                 public void handleTransportError(StompSession session, Throwable exception) {
                     log.error("Erreur transport WebSocket : {}", exception.getMessage());
+                    broadcastStatus(false);
                     scheduleReconnect();
                 }
 
@@ -146,6 +154,21 @@ public class ServerConnectionService {
      */
     public boolean isConnected() {
         return stompSession != null && stompSession.isConnected();
+    }
+
+    /**
+     * Publie le statut de connexion vers le frontend via STOMP local.
+     */
+    private void broadcastStatus(boolean connected) {
+        if (messagingTemplate != null) {
+            try {
+                messagingTemplate.convertAndSend(
+                        "/topic/connection-status",
+                        java.util.Map.of("connected", connected));
+            } catch (Exception e) {
+                log.trace("Push STOMP connection-status ignoré : {}", e.getMessage());
+            }
+        }
     }
 
     /**

@@ -16,11 +16,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -48,6 +51,7 @@ public class MessageService {
     private final DoubleRatchetService doubleRatchetService;
     private final CryptoLogger cryptoLogger;
     private final RestTemplate restTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Value("${signalchat.username}")
     private String username;
@@ -122,12 +126,15 @@ public class MessageService {
                     encrypted.getMessageNumber(),
                     cryptoLogger.truncateHex(Base64.getDecoder().decode(encrypted.getCiphertext())));
 
-            // --- Historique local (UI) ---
-            chatMessages.add(ChatMessage.builder()
+            // --- Historique local (UI) + broadcast WebSocket ---
+            ChatMessage chatMsg = ChatMessage.builder()
                     .sender(username)
+                    .recipient(recipientUsername)
                     .content(plaintext)
                     .timestamp(System.currentTimeMillis())
-                    .build());
+                    .build();
+            chatMessages.add(chatMsg);
+            messagingTemplate.convertAndSend("/topic/messages", chatMsg);
         }
     }
 
@@ -230,12 +237,15 @@ public class MessageService {
             String plaintextStr = new String(plaintext, StandardCharsets.UTF_8);
             log.info("Message dechiffre de {} : '{}'", senderUsername, plaintextStr);
 
-            // --- Historique local (UI) ---
-            chatMessages.add(ChatMessage.builder()
+            // --- Historique local (UI) + broadcast WebSocket ---
+            ChatMessage chatMsg = ChatMessage.builder()
                     .sender(senderUsername)
+                    .recipient(username)
                     .content(plaintextStr)
                     .timestamp(System.currentTimeMillis())
-                    .build());
+                    .build();
+            chatMessages.add(chatMsg);
+            messagingTemplate.convertAndSend("/topic/messages", chatMsg);
         }
     }
 
@@ -297,6 +307,16 @@ public class MessageService {
      */
     public List<ChatMessage> getChatMessages() {
         return Collections.unmodifiableList(new ArrayList<>(chatMessages));
+    }
+
+    /**
+     * Retourne les messages échangés avec un correspondant spécifique.
+     * Inclut les messages envoyés (sender = username) et reçus (sender = recipient).
+     */
+    public List<ChatMessage> getMessagesByRecipient(String recipient) {
+        return chatMessages.stream()
+                .filter(m -> recipient.equals(m.getSender()) || recipient.equals(m.getRecipient()))
+                .toList();
     }
 
     /**

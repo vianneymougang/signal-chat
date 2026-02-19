@@ -3,6 +3,8 @@ package cm.iusjc.signalchat.client.monitoring;
 import cm.iusjc.signalchat.client.model.CryptoEvent;
 import cm.iusjc.signalchat.client.model.CryptoEventType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -19,6 +21,10 @@ import java.util.List;
 public class CryptoLogger {
 
     private final List<CryptoEvent> events = Collections.synchronizedList(new ArrayList<>());
+
+    /** Injecté optionnellement pour éviter les problèmes de démarrage (broker pas encore prêt) */
+    @Autowired(required = false)
+    private SimpMessagingTemplate messagingTemplate;
 
     /**
      * Journalise un evenement cryptographique.
@@ -41,6 +47,15 @@ public class CryptoLogger {
 
         events.add(event);
         log.debug("[CRYPTO] {} | {} | in={} | out={}", type, description, inputHex, outputHex);
+
+        // Push temps réel vers le frontend via STOMP local
+        if (messagingTemplate != null) {
+            try {
+                messagingTemplate.convertAndSend("/topic/crypto-events", event);
+            } catch (Exception e) {
+                log.trace("Push STOMP crypto-event ignoré : {}", e.getMessage());
+            }
+        }
     }
 
     /** Version simplifiee sans input/output binaires. */
