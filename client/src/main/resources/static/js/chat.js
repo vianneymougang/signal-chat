@@ -7,6 +7,7 @@ const Chat = (() => {
     let currentRecipient = null;
     const pendingNotifications = {}; // { username: count }
     let usersPollingInterval = null;
+    let previousUsers = []; // pour détecter les déconnexions
 
     // =========================================================================
     // Initialisation
@@ -46,7 +47,21 @@ const Chat = (() => {
     function loadUsers() {
         fetch('/api/chat/users')
             .then(r => r.json())
-            .then(users => renderUserList(users))
+            .then(users => {
+                // Détecter les utilisateurs qui se sont déconnectés
+                previousUsers.forEach(prev => {
+                    if (!users.includes(prev)) {
+                        showSystemMessage(`${prev} s'est déconnecté`);
+                        // Si on était en train de lui parler, désactiver l'input
+                        if (prev === currentRecipient) {
+                            const input = document.getElementById('message-input');
+                            input.placeholder = `${prev} est déconnecté...`;
+                        }
+                    }
+                });
+                previousUsers = [...users];
+                renderUserList(users);
+            })
             .catch(() => {});
     }
 
@@ -214,14 +229,24 @@ const Chat = (() => {
 
     function updateConnectionIndicator(status) {
         const indicator = document.getElementById('connection-indicator');
-        if (!indicator) return;
+        const banner = document.getElementById('server-unavailable-banner');
 
-        if (status.connected) {
-            indicator.className = 'indicator online';
-            indicator.textContent = '● Connecté';
-        } else {
-            indicator.className = 'indicator offline';
-            indicator.textContent = '○ Déconnecté';
+        if (indicator) {
+            if (status.connected) {
+                indicator.className = 'indicator online';
+                indicator.textContent = '● Connecté';
+            } else {
+                indicator.className = 'indicator offline';
+                indicator.textContent = '○ Déconnecté';
+            }
+        }
+
+        if (banner) {
+            if (status.connected) {
+                banner.classList.add('hidden');
+            } else {
+                banner.classList.remove('hidden');
+            }
         }
     }
 
@@ -248,7 +273,17 @@ const Chat = (() => {
         setTimeout(() => error.remove(), 5000);
     }
 
-    return { init };
+    function showSystemMessage(message) {
+        const container = document.getElementById('messages-container');
+        const el = document.createElement('div');
+        el.style.cssText = 'text-align:center;color:#f59e0b;font-size:0.75rem;padding:6px 16px;' +
+            'background:rgba(245,158,11,0.08);border-radius:12px;margin:4px auto;max-width:80%;';
+        el.textContent = message;
+        container.appendChild(el);
+        scrollToBottom();
+    }
+
+    return { init, showSystemMessage };
 })();
 
 // Démarrer quand le DOM est prêt

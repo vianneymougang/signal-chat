@@ -22,10 +22,15 @@ const CryptoMonitor = (() => {
         'DECRYPT':            { emoji: '🔓', color: '#4ec9b0', css: 'DECRYPT' },
         'HMAC_COMPUTE':       { emoji: '✅', color: '#808080', css: 'HMAC' },
         'HMAC_VERIFY':        { emoji: '✅', color: '#808080', css: 'HMAC' },
-        'SIGNATURE_VERIFY':   { emoji: '🔏', color: '#dcdcaa', css: 'SIGNATURE' }
+        'SIGNATURE_VERIFY':   { emoji: '🔏', color: '#dcdcaa', css: 'SIGNATURE' },
+        'CRYPTO_ERROR':       { emoji: '🚨', color: '#ef4444', css: 'ERROR' },
+        'SYSTEM_EVENT':       { emoji: 'ℹ️',  color: '#f59e0b', css: 'SYSTEM' }
     };
 
     const DEFAULT_STYLE = { emoji: '⚙️', color: '#808080', css: 'HMAC' };
+
+    // Compteurs de sécurité
+    const stats = { messages: 0, ratchets: 0, keys: 0 };
 
     // Buffer des événements bruts pour l'export
     const rawEvents = [];
@@ -72,8 +77,27 @@ const CryptoMonitor = (() => {
      * @param {Object}  event   - CryptoEvent { timestamp, type, inputHex, outputHex, description }
      * @param {boolean} animate - Activer l'animation fade-in (défaut: true)
      */
+    function updateStats(eventType) {
+        if (eventType === 'ENCRYPT' || eventType === 'DECRYPT') {
+            stats.messages++;
+            const el = document.getElementById('stat-messages');
+            if (el) el.textContent = stats.messages;
+        }
+        if (eventType === 'RATCHET_STEP') {
+            stats.ratchets++;
+            const el = document.getElementById('stat-ratchets');
+            if (el) el.textContent = stats.ratchets;
+        }
+        if (eventType === 'KEY_GEN' || eventType === 'SYMMETRIC_RATCHET') {
+            stats.keys++;
+            const el = document.getElementById('stat-keys');
+            if (el) el.textContent = stats.keys;
+        }
+    }
+
     function addEvent(event, animate = true) {
         rawEvents.push(event);
+        updateStats(event.type);
 
         const container = document.getElementById('crypto-log');
         const style = EVENT_STYLES[event.type] || DEFAULT_STYLE;
@@ -172,6 +196,15 @@ const CryptoMonitor = (() => {
     function clearLogs() {
         document.getElementById('crypto-log').innerHTML = '';
         rawEvents.length = 0;
+
+        // Réinitialiser les compteurs
+        stats.messages = 0;
+        stats.ratchets = 0;
+        stats.keys = 0;
+        ['stat-messages', 'stat-ratchets', 'stat-keys'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '0';
+        });
 
         // Notifier le backend pour vider sa liste
         fetch('/api/chat/crypto-events', { method: 'DELETE' })

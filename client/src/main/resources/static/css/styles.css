@@ -4,6 +4,29 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
+   Bannière serveur non disponible
+   -------------------------------------------------------------------------- */
+.server-banner {
+    background: #ef4444;
+    color: #fff;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 100;
+    animation: slideDown 0.3s ease-out;
+}
+
+.server-banner.hidden {
+    display: none;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
    Reset & base
    -------------------------------------------------------------------------- */
 *, *::before, *::after {
@@ -369,6 +392,52 @@ body {
     border-color: #6e6e6e;
 }
 
+/* Compteur de sécurité */
+.security-stats {
+    background: #1a1a2e;
+    border-bottom: 1px solid #3c3c3c;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #25d366;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.62rem;
+    color: #6a6a6a;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-separator {
+    color: #3c3c3c;
+    font-size: 1rem;
+}
+
+.stat-tagline {
+    font-size: 0.65rem;
+    color: #569cd6;
+    font-style: italic;
+    flex-basis: 100%;
+    margin-top: 2px;
+}
+
 /* Zone de log */
 .crypto-log {
     flex: 1;
@@ -472,6 +541,12 @@ body {
 
 .event-SIGNATURE        { border-left-color: #dcdcaa; }
 .event-SIGNATURE .event-type { color: #dcdcaa; }
+
+.event-ERROR            { border-left-color: #ef4444; background: #2a1515; }
+.event-ERROR .event-type { color: #ef4444; }
+
+.event-SYSTEM           { border-left-color: #f59e0b; background: #252520; }
+.event-SYSTEM .event-type { color: #f59e0b; }
 
 /* --------------------------------------------------------------------------
    Animations

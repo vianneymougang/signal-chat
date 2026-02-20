@@ -7,6 +7,11 @@
         <link rel="stylesheet" th:href="@{/css/styles.css}" />
     </head>
     <body>
+        <!-- Bannière serveur non disponible -->
+        <div id="server-unavailable-banner" class="server-banner hidden">
+            ⚠️ Serveur non disponible — reconnexion en cours...
+        </div>
+
         <div class="app-container">
             <!--
             ================================================================
@@ -65,6 +70,25 @@
                         <button id="clear-logs-btn">Effacer</button>
                         <button id="export-logs-btn">Exporter</button>
                     </div>
+                </div>
+
+                <!-- Compteur de sécurité -->
+                <div class="security-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-messages">0</span>
+                        <span class="stat-label">messages</span>
+                    </div>
+                    <div class="stat-separator">|</div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-ratchets">0</span>
+                        <span class="stat-label">ratchets</span>
+                    </div>
+                    <div class="stat-separator">|</div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-keys">0</span>
+                        <span class="stat-label">clés uniques</span>
+                    </div>
+                    <div class="stat-tagline">🔑 Chaque message utilise une clé unique détruite après usage</div>
                 </div>
 
                 <div id="crypto-log" class="crypto-log">
