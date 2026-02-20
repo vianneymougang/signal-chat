@@ -123,7 +123,9 @@ public class X3DHService {
                     ekASeed, opkBPub,
                     CryptoEventType.X3DH_DH4,
                     "DH4 = ECDH(EK_A, OPK_B)");
-            usedOPKId = 0; // Identifiant de la premiere OPK
+            // Utiliser l'index original fourni par le serveur (et non l'index dans la liste)
+            usedOPKId = bobKeyBundle.getOneTimePreKeyId() != null
+                    ? bobKeyBundle.getOneTimePreKeyId() : 0;
             log.debug("OPK_B utilisee (id={})", usedOPKId);
         } else {
             log.warn("Aucune OPK disponible pour {} — X3DH avec 3 DH seulement", bobKeyBundle.getUsername());

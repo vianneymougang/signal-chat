@@ -38,4 +38,7 @@ public class KeyBundle {
 
     /** Liste des One-Time Pre-Keys publiques X25519 (Base64, 32 bytes chacune) */
     private List<String> oneTimePreKeys;
+
+    /** Index original de l'OPK consommee (renseigne dans la reponse du bundle) */
+    private Integer oneTimePreKeyId;
 }
