@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
@@ -48,7 +49,7 @@ public class ServerConnectionService {
     private StompSession stompSession;
 
     /** Callback vers MessageService pour les messages recus */
-    private Consumer<EncryptedMessage> messageHandler;
+    private volatile Consumer<EncryptedMessage> messageHandler;
 
     /** Push des changements de statut vers le frontend (optionnel au démarrage) */
     @Autowired(required = false)
@@ -102,6 +103,13 @@ public class ServerConnectionService {
                     scheduleReconnect();
                 }
 
+                @Override
+                public void handleException(StompSession session, StompCommand command,
+                        StompHeaders headers, byte[] payload, Throwable exception) {
+                    log.error("STOMP EXCEPTION | command={} | destination={} | erreur={}",
+                            command, headers.getDestination(), exception.getMessage(), exception);
+                }
+
             }).get(10, TimeUnit.SECONDS);
 
         } catch (Exception e) {
@@ -114,25 +122,37 @@ public class ServerConnectionService {
      * S'abonne au topic personnel du client pour recevoir les messages chiffres.
      */
     private void subscribeToMessages(StompSession session) {
-        session.subscribe("/topic/messages/" + username, new StompFrameHandler() {
+        String destination = "/topic/messages/" + username;
+        log.info("Abonnement STOMP en cours : destination={} | sessionId={}", destination, session.getSessionId());
+
+        session.subscribe(destination, new StompFrameHandler() {
 
             @Override
             public Type getPayloadType(StompHeaders headers) {
+                log.debug("Frame entrante sur {} | content-type={}", destination, headers.getContentType());
                 return EncryptedMessage.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                EncryptedMessage msg = (EncryptedMessage) payload;
-                int ciphertextSize = msg.getCiphertext() != null ? msg.getCiphertext().length() : 0;
-                log.info("Message chiffre recu de {} | ciphertext: {} bytes (Base64) | msgNum: {}",
-                        msg.getSender(), ciphertextSize, msg.getMessageNumber());
-                if (messageHandler != null) {
-                    messageHandler.accept(msg);
+                log.info(">>> FRAME REÇUE sur {} | payload null ? {} | payload class : {}",
+                        destination, payload == null, payload != null ? payload.getClass().getName() : "N/A");
+                try {
+                    EncryptedMessage msg = (EncryptedMessage) payload;
+                    int ciphertextSize = msg.getCiphertext() != null ? msg.getCiphertext().length() : 0;
+                    log.info("Message chiffre recu de {} | ciphertext: {} bytes (Base64) | msgNum: {}",
+                            msg.getSender(), ciphertextSize, msg.getMessageNumber());
+                    if (messageHandler != null) {
+                        messageHandler.accept(msg);
+                    } else {
+                        log.error("messageHandler est NULL — le message de {} est perdu !", msg.getSender());
+                    }
+                } catch (Exception e) {
+                    log.error("ERREUR dans handleFrame : {}", e.getMessage(), e);
                 }
             }
         });
-        log.info("Abonne a /topic/messages/{}", username);
+        log.info("Abonne a {}", destination);
     }
 
     /**
