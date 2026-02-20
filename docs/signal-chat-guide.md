@@ -759,15 +759,3 @@ claude "Build le projet complet : mvn clean package. Corrige les erreurs de comp
   }
 }
 ```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
