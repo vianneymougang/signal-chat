@@ -12,6 +12,8 @@ import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 import org.springframework.web.socket.sockjs.client.RestTemplateXhrTransport;
@@ -74,9 +76,16 @@ public class ServerConnectionService {
      * Appele par KeyRegistrationService apres enregistrement des cles.
      */
     public void connect() {
+        // RestTemplate avec header ngrok pour le transport XHR (bypass interstitiel ngrok)
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getInterceptors().add((request, body, execution) -> {
+            request.getHeaders().set("ngrok-skip-browser-warning", "true");
+            return execution.execute(request, body);
+        });
+
         List<Transport> transports = List.of(
                 new WebSocketTransport(new StandardWebSocketClient()),
-                new RestTemplateXhrTransport()
+                new RestTemplateXhrTransport(restTemplate)
         );
         SockJsClient sockJsClient = new SockJsClient(transports);
         WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
@@ -85,8 +94,12 @@ public class ServerConnectionService {
         String wsUrl = serverUrl + "/ws";
         log.info("Connexion WebSocket STOMP vers {} ...", wsUrl);
 
+        // Header pour le handshake WebSocket natif (bypass interstitiel ngrok free tier)
+        WebSocketHttpHeaders handshakeHeaders = new WebSocketHttpHeaders();
+        handshakeHeaders.set("ngrok-skip-browser-warning", "true");
+
         try {
-            stompSession = stompClient.connectAsync(wsUrl, new StompSessionHandlerAdapter() {
+            stompSession = stompClient.connectAsync(wsUrl, handshakeHeaders, new StompSessionHandlerAdapter() {
 
                 @Override
                 public void afterConnected(StompSession session, StompHeaders headers) {
