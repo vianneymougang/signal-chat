@@ -12,10 +12,10 @@ set -e
 
 USERNAME=${1:-Alice}
 PORT=${2:-8081}
-SERVER=${3:-localhost}
+SERVER=${3:-http://localhost:9000}
 
 echo "Démarrage du client $USERNAME sur le port $PORT"
-echo "Serveur : $SERVER:9000"
+echo "Serveur : $SERVER"
 echo ""
 
 JAR="client/target/client.jar"
@@ -29,4 +29,4 @@ fi
 java -jar "$JAR" \
     --signalchat.username="$USERNAME" \
     --server.port="$PORT" \
-    --signalchat.server-url="http://$SERVER:9000"
+    --signalchat.server-url="$SERVER"

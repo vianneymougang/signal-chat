@@ -35,6 +35,11 @@ public class DoubleRatchetService {
     private final CryptoEngine cryptoEngine;
     private final CryptoLogger cryptoLogger;
 
+    /** Constante Signal : derive la cle de message depuis la cle de chaine (HMAC input) */
+    private static final byte[] MSG_KEY_INPUT   = {0x01};
+    /** Constante Signal : avance la cle de chaine (ratchet symetrique, HMAC input) */
+    private static final byte[] CHAIN_ADVANCE   = {0x02};
+
     // =========================================================================
     // Initialisation des sessions
     // =========================================================================
@@ -337,10 +342,10 @@ public class DoubleRatchetService {
         byte[] chainKey  = state.getSendingChainKey();
 
         // messageKey = HMAC-SHA256(chainKey, 0x01)
-        byte[] messageKey = cryptoEngine.hmacSHA256(chainKey, new byte[]{0x01});
+        byte[] messageKey = cryptoEngine.hmacSHA256(chainKey, MSG_KEY_INPUT);
 
         // sendingChainKey = HMAC-SHA256(chainKey, 0x02)
-        byte[] newChainKey = cryptoEngine.hmacSHA256(chainKey, new byte[]{0x02});
+        byte[] newChainKey = cryptoEngine.hmacSHA256(chainKey, CHAIN_ADVANCE);
         state.setSendingChainKey(newChainKey);
 
         cryptoLogger.logEvent(CryptoEventType.SYMMETRIC_RATCHET, chainKey, newChainKey,
@@ -361,8 +366,8 @@ public class DoubleRatchetService {
     private byte[] advanceReceivingRatchet(SessionState state) {
         byte[] chainKey   = state.getReceivingChainKey();
 
-        byte[] messageKey  = cryptoEngine.hmacSHA256(chainKey, new byte[]{0x01});
-        byte[] newChainKey = cryptoEngine.hmacSHA256(chainKey, new byte[]{0x02});
+        byte[] messageKey  = cryptoEngine.hmacSHA256(chainKey, MSG_KEY_INPUT);
+        byte[] newChainKey = cryptoEngine.hmacSHA256(chainKey, CHAIN_ADVANCE);
         state.setReceivingChainKey(newChainKey);
 
         cryptoLogger.logEvent(CryptoEventType.SYMMETRIC_RATCHET, chainKey, newChainKey,
