@@ -48,5 +48,11 @@ public enum CryptoEventType {
     HMAC_VERIFY,
 
     /** Verification d'une signature XEdDSA */
-    SIGNATURE_VERIFY
+    SIGNATURE_VERIFY,
+
+    /** Erreur cryptographique (HMAC invalide, déchiffrement échoué, etc.) */
+    CRYPTO_ERROR,
+
+    /** Notification système (connexion, déconnexion utilisateur) */
+    SYSTEM_EVENT
 }

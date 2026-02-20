@@ -4,6 +4,7 @@ import cm.iusjc.signalchat.client.crypto.DoubleRatchetService;
 import cm.iusjc.signalchat.client.crypto.SessionState;
 import cm.iusjc.signalchat.client.crypto.X3DHService;
 import cm.iusjc.signalchat.client.model.ChatMessage;
+import cm.iusjc.signalchat.client.model.CryptoEventType;
 import cm.iusjc.signalchat.client.model.EncryptedMessage;
 import cm.iusjc.signalchat.client.model.KeyBundle;
 import cm.iusjc.signalchat.client.model.X3DHResult;
@@ -109,11 +110,19 @@ public class MessageService {
             SessionState session = sessions.get(recipientUsername);
 
             // --- Chiffrement Double Ratchet ---
-            EncryptedMessage encrypted = doubleRatchetService.ratchetEncrypt(
-                    session,
-                    plaintext.getBytes(StandardCharsets.UTF_8),
-                    username,
-                    recipientUsername);
+            EncryptedMessage encrypted;
+            try {
+                encrypted = doubleRatchetService.ratchetEncrypt(
+                        session,
+                        plaintext.getBytes(StandardCharsets.UTF_8),
+                        username,
+                        recipientUsername);
+            } catch (Exception e) {
+                log.error("Erreur de chiffrement vers {} : {}", recipientUsername, e.getMessage());
+                cryptoLogger.logEvent(CryptoEventType.CRYPTO_ERROR,
+                        "Chiffrement échoué vers " + recipientUsername + " : " + e.getMessage());
+                return;
+            }
 
             // --- Headers X3DH : uniquement pour le premier message ---
             if (isFirstMessage && x3dhResult != null) {
@@ -231,6 +240,13 @@ public class MessageService {
             } catch (SecurityException e) {
                 log.error("SECURITE : HMAC invalide pour le message de {} — message rejete : {}",
                         senderUsername, e.getMessage());
+                cryptoLogger.logEvent(CryptoEventType.CRYPTO_ERROR,
+                        "HMAC invalide — message de " + senderUsername + " rejeté : " + e.getMessage());
+                return;
+            } catch (Exception e) {
+                log.error("Erreur de déchiffrement du message de {} : {}", senderUsername, e.getMessage());
+                cryptoLogger.logEvent(CryptoEventType.CRYPTO_ERROR,
+                        "Déchiffrement échoué pour message de " + senderUsername + " : " + e.getMessage());
                 return;
             }
 
