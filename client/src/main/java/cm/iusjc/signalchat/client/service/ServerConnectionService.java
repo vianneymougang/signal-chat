@@ -13,13 +13,10 @@ import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.socket.WebSocketHttpHeaders;
-import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 import org.springframework.web.socket.sockjs.client.RestTemplateXhrTransport;
 import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.Transport;
-import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 import java.lang.reflect.Type;
 import java.util.List;
@@ -77,16 +74,16 @@ public class ServerConnectionService {
      */
     public void connect() {
         // RestTemplate avec header ngrok pour le transport XHR (bypass interstitiel ngrok)
+        // Note : WebSocketTransport (WSS natif) est exclu car JSR-356 n'autorise pas
+        // les headers custom lors du handshake → ngrok coupe la connexion (EOFException).
+        // XHR-streaming via SockJS supporte les headers HTTP et fonctionne correctement.
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getInterceptors().add((request, body, execution) -> {
             request.getHeaders().set("ngrok-skip-browser-warning", "true");
             return execution.execute(request, body);
         });
 
-        List<Transport> transports = List.of(
-                new WebSocketTransport(new StandardWebSocketClient()),
-                new RestTemplateXhrTransport(restTemplate)
-        );
+        List<Transport> transports = List.of(new RestTemplateXhrTransport(restTemplate));
         SockJsClient sockJsClient = new SockJsClient(transports);
         WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
         stompClient.setMessageConverter(new MappingJackson2MessageConverter());
@@ -94,12 +91,8 @@ public class ServerConnectionService {
         String wsUrl = serverUrl + "/ws";
         log.info("Connexion WebSocket STOMP vers {} ...", wsUrl);
 
-        // Header pour le handshake WebSocket natif (bypass interstitiel ngrok free tier)
-        WebSocketHttpHeaders handshakeHeaders = new WebSocketHttpHeaders();
-        handshakeHeaders.set("ngrok-skip-browser-warning", "true");
-
         try {
-            stompSession = stompClient.connectAsync(wsUrl, handshakeHeaders, new StompSessionHandlerAdapter() {
+            stompSession = stompClient.connectAsync(wsUrl, new StompSessionHandlerAdapter() {
 
                 @Override
                 public void afterConnected(StompSession session, StompHeaders headers) {
